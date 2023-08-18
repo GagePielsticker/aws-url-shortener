@@ -1,4 +1,4 @@
-service: api-service
+service: url-service
 
 ###################
 # General Configuration
@@ -46,7 +46,7 @@ provider:
     
   ### Lambda Settings
   runtime: nodejs18.x #node version
-  memorySize: 1024 # optional, in MB, default is 1024
+  memorySize: 512 # optional, in MB, default is 1024
   timeout: 20 # optional, in seconds, default is 6
   architecture: arm64 #architecture to run the lambda (graviton2)
   logRetentionInDays: 7 #time in days to keep lambda logs in cloudwatch
@@ -105,9 +105,22 @@ functions:
         - src/lambdas/shorten/**
     events: #API Gateway integration etc
       - http:
-          method: get
+          method: post
           path: shorten
           private: true #require api key
+          cors: #cors settings
+            origin: '*'
+
+  s:
+    handler: src/lambdas/s/handler.handler #fileName.exportName in code
+    maximumRetryAttempts: 1 #Retry attempts by lambda on failure
+    package: # Only package code relevant to this specific lambda
+      patterns:
+        - src/lambdas/s/**
+    events: #API Gateway integration etc
+      - http:
+          method: get
+          path: s/{proxy+}
           cors: #cors settings
             origin: '*'
             

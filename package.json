@@ -37,7 +37,7 @@
   },
   "dependencies": {
     "aws-sdk": "^2.1439.0",
-    "uuid": "^9.0.0",
+    "short-uuid": "^4.2.2",
     "yup": "^1.2.0"
   }
 }

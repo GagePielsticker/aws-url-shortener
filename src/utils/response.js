@@ -1,4 +1,4 @@
-function formatResponse (data, stat) {
+function formatResponse (data, stat, headers) {
   let statusCode
 
   if (!data || typeof data !== 'object') {
@@ -10,12 +10,15 @@ function formatResponse (data, stat) {
   return {
     statusCode,
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      ...headers
     },
     body: JSON.stringify(
       {
-        region: process.env.AWS_REGION,
-        data
+        meta: {
+          region: process.env.AWS_REGION
+        },
+        ...data
       }
     )
   }

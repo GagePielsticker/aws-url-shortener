@@ -7,15 +7,16 @@ const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION })
 
 const { string, object } = require('yup')
 
-const { v4: uuidv4 } = require('uuid')
+const short = require('short-uuid')
 
 /* Invoke handler */
 exports.handler = async (event, context, callback) => {
-  // /shorten?=https://123.com/1234/1234
+  // /shorten?url=https://123.com/1234/1234
+  const params = event?.queryStringParameters
   console.log(`Lambda Invoked with params:\n${params ? JSON.stringify(params, null, 4) : 'NONE'}`)
 
   // validate input
-  const url = event.queryStringParameters && event.queryStringParameters.url
+  const url = event.queryStringParameters.url
 
   const inputSchema = object({
     longUrl: string().url()
@@ -36,7 +37,7 @@ exports.handler = async (event, context, callback) => {
     IndexName: process.env.LONG_INDEX,
     KeyConditionExpression: 'longID = :longID',
     ExpressionAttributeValues: marshall({
-      ':longID': longUrl
+      ':longID': url
     })
   }
 
@@ -47,7 +48,7 @@ exports.handler = async (event, context, callback) => {
     if (queryResponse.Items && queryResponse.Items.length > 0) {
       return callback(null, formatResponse({
         status: 'Successfully shortened URL.',
-        data: queryResponse.Items[0].shortID
+        data: queryResponse.Items[0].shortID.S
       }))
     }
   } catch (error) {
@@ -59,8 +60,8 @@ exports.handler = async (event, context, callback) => {
   const dbInput = {
     TableName: process.env.DYNAMO_TABLE_NAME,
     Item: {
-      shortID: { S: uuidv4() }, // primary key (unchangeable)
-      longID: { S: longUrl }, // secondary index key
+      shortID: { S: short.generate() }, // primary key (unchangeable)
+      longID: { S: url }, // secondary index key
       createdOn: { N: `${+new Date()}` } // You must send numbers to Dynamo as strings, however dynamo will treat it as a number for maths
     }
   }
