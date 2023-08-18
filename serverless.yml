@@ -11,6 +11,26 @@ plugins:
 
 provider:
 
+  ### Global environment Vars for lambdas
+  environment:
+    DYNAMO_TABLE_NAME: 'linkTable'
+    LONG_INDEX: 'longlink'
+
+    ### Give Lambda permission to dynamodb
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: 
+      - !Sub arn:aws:dynamodb:*:${AWS::AccountId}:table/${self:provider.environment.DYNAMO_TABLE_NAME}
+      - !Sub arn:aws:dynamodb:*:${AWS::AccountId}:table/${self:provider.environment.DYNAMO_TABLE_NAME}/index/${self:provider.environment.LONG_INDEX}
+
   ### General Deployment Settings
   name: aws
   stage: ${opt:stage, 'dev'}
@@ -35,7 +55,7 @@ provider:
     apiGateway: true
 
   ### API Gateway creation/Settings & usage plan
-  endpointType: EDGE
+  endpointType: REGIONAL
   apiGateway:
     description: Api Gateway for ${self:service}-${self:provider.stage}
     apiKeys:
@@ -77,39 +97,56 @@ package:
 
 # Actual lambda functions
 functions:
-  hello:
-    handler: src/lambdas/hello/handler.handler #fileName.exportName in code
+  shorten:
+    handler: src/lambdas/shorten/handler.handler #fileName.exportName in code
     maximumRetryAttempts: 1 #Retry attempts by lambda on failure
     package: # Only package code relevant to this specific lambda
       patterns:
-        - src/lambdas/hello/**
+        - src/lambdas/shorten/**
     events: #API Gateway integration etc
       - http:
           method: get
-          path: hello
+          path: shorten
           private: true #require api key
           cors: #cors settings
             origin: '*'
-
-  bye:
-    handler: src/lambdas/bye/handler.handler
-    maximumRetryAttempts: 1
-    package:
-      patterns:
-        - src/lambdas/bye/**
-    events:
-      - http:
-          method: get
-          path: bye
-          private: true
-          cors:
-            origin: '*'
-
+            
 ###################
 # Additional Resource Provisioning
 ###################
 resources:
   Resources:
+
+    # DynamoDB for link data
+    # Check out https://github.com/sbstjn/serverless-dynamodb-autoscaling for autoscaling the capacity units
+    # Check out https://www.serverless.com/plugins/serverless-create-global-dynamodb-table/ for multi-region
+    # We keep put our email as a secondary index so that we can preserve the ability to change it if the user wishes. 
+    linkTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.DYNAMO_TABLE_NAME}
+        AttributeDefinitions:
+          - AttributeName: shortID
+            AttributeType: S
+          - AttributeName: longID
+            AttributeType: S 
+        KeySchema:
+          - AttributeName: shortID
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        GlobalSecondaryIndexes:  # Define the secondary index
+          - IndexName: ${self:provider.environment.LONG_INDEX}
+            KeySchema:
+              - AttributeName: longID
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL  # Change this to specify what attributes to include in the index
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+          
     # WAF for our api gateway
     wafv2:
       Type: AWS::WAFv2::WebACL

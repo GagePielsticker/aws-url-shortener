@@ -1,12 +1,10 @@
-
 function formatResponse (data, stat) {
   let statusCode
 
   if (!data || typeof data !== 'object') {
     data = 'Invalid Server Response.'
     statusCode = 400
-  }
-  else if (!stat) statusCode = 200
+  } else if (!stat) statusCode = 200
   else statusCode = stat
 
   return {
