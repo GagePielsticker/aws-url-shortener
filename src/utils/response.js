@@ -11,6 +11,7 @@ function formatResponse (data, stat, headers) {
     statusCode,
     headers: {
       'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin':'*',
       ...headers
     },
     body: JSON.stringify(

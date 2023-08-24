@@ -58,18 +58,6 @@ provider:
   endpointType: REGIONAL
   apiGateway:
     description: Api Gateway for ${self:service}-${self:provider.stage}
-    apiKeys:
-      - privatekey: # Used to tie key to usage plan
-          - ${self:service}-${self:provider.stage}-KEY
-    usagePlan:
-      - privatekey: # Used to tie key to usage plan. Key will abide by the following
-          quota:
-            limit: 5000 #maximum 5000 request per month, refreshes on 2nd day
-            offset: 2
-            period: MONTH
-          throttle:
-            burstLimit: 200 #maximum number of concurrent requests that API gateway will serve at any given point
-            rateLimit: 100 #request per second limit
 
 # attach waf to api gateway
 custom:
@@ -107,7 +95,6 @@ functions:
       - http:
           method: post
           path: shorten
-          private: true #require api key
           cors: #cors settings
             origin: '*'
 
