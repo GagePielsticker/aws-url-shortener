@@ -7,7 +7,7 @@
     "dev": "serverless offline",
     "test": "jest --coverage && coveralls < coverage/lcov.info",
     "build": "serverless package",
-    "deploy": "serverless deploy --stage dev --region us-east-1"
+    "deploy": "serverless deploy --stage prod --region us-east-1"
   },
   "repository": {
     "type": "git",
