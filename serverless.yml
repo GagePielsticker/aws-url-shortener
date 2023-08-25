@@ -95,6 +95,7 @@ functions:
       - http:
           method: post
           path: shorten
+          private: true
           cors: #cors settings
             origin: '*'
 
